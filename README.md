@@ -66,6 +66,9 @@ $ rsc --stream --route=orders --debug ws://localhost:8070/server/rsocket
 
 # With data (payload)
 $ rsc --stream --route=orders --debug --data="{\"rscclient\":\"request\"}" ws://localhost:8070/server/rsocket
+
+# With metadata
+$ rsc --stream --route=orders --debug --metadata="{\"data\":\"custom metadata value from rsc\"}" ws://localhost:8070/server/rsocket
 ```
 
 This will produce output like:
@@ -135,7 +138,7 @@ Data:
 
 ```
 
-**Note:** The whole frames sent are visible.
+**Note:** The whole frames sent are visible, also check out the server logs.
 
 #### HTTP
 
@@ -199,6 +202,6 @@ This will produce output like:
 ## Next up
 
 - [X] Payload integration
-- [ ] Custom metadata
+- [X] Custom metadata
 - [ ] Multiple routes
 - [ ] SpringSecurity

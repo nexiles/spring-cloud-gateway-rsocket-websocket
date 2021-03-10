@@ -20,6 +20,7 @@ const metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string;
 
 export default async ({Vue}) => {
 
+  // noinspection JSUnusedGlobalSymbols
   Vue.prototype.$rsocketclient = new RSocketClient({
     setup: {
       dataMimeType,
@@ -39,15 +40,17 @@ export default async ({Vue}) => {
     ),
   });
 
-  Vue.prototype.$encodersocketroute = encodersocketroute;
-  Vue.prototype.$encodejson = encodejson;
+  // noinspection JSUnusedGlobalSymbols
+  Vue.prototype.$encodemetadata = encodemetadata;
+  // noinspection JSUnusedGlobalSymbols
+  Vue.prototype.$encodedata = encodedata;
 }
 
-function encodejson(data) {
+function encodedata(data) {
   return Buffer.from(JsonSerializer.serialize(data))
 }
 
-function encodersocketroute(route, customMetadata) {
+function encodemetadata(route, customMetadata) {
   const metadata = [[MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]];
 
   if (customMetadata)

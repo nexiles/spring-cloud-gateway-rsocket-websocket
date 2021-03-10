@@ -1,7 +1,9 @@
 package com.nexiles.example.gatewayrsocketwebsocket.controller;
 
 import com.nexiles.example.gatewayrsocketwebsocket.OrderCreator;
+import com.nexiles.example.gatewayrsocketwebsocket.config.RSocketConfig;
 import com.nexiles.example.gatewayrsocketwebsocket.events.NewOrderEvent;
+import com.nexiles.example.gatewayrsocketwebsocket.pojo.CustomMetadata;
 import com.nexiles.example.gatewayrsocketwebsocket.pojo.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -83,6 +85,11 @@ public class OrderController {
 
         if (payload != null) {
             log.debug("Payload: {}", payload.toString());
+        }
+
+        final Object customMeta = metadata.getOrDefault(RSocketConfig.CUSTOM_META_KEY, null);
+        if (customMeta != null) {
+            log.debug("CustomMetadata: {}", ((CustomMetadata) customMeta).getData());
         }
 
         log.debug("");

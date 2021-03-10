@@ -46,6 +46,7 @@ export default {
       connected: false,
       rowsPerPage: [0],
       route: "orders",
+      customMetadataKey: "custom-meta",
       javaMaxInteger: 2147483647,
       columns: [
         {
@@ -119,8 +120,8 @@ export default {
 
           socket
             .requestStream({
-              data: this.$encodejson({jsclient:"request"}),
-              metadata: this.$encodersocketroute(this.route),
+              data: this.$encodedata({jsclient:"request"}),
+              metadata: this.$encodemetadata(this.route, {data:"custom metadata value from js"}),
             })
             .subscribe({
               onComplete: () =>
