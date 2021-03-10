@@ -1,8 +1,6 @@
-<html lang="en">
-<center> <h1>SpringCloud Gateway RSocket Example</h1> </center>
-</html>
+# SpringCloud Gateway RSocket Example
 
-# What is RSocket ? 
+## What is RSocket ? 
 
 Check out the official docs: [RSocket Docs](https://rsocket.io/docs/)
 
