@@ -46,7 +46,7 @@ export default {
       connected: false,
       rowsPerPage: [0],
       route: "orders",
-      maxRSocketRequestN: 2147483647,
+      javaMaxInteger: 2147483647,
       columns: [
         {
           name: 'dateTime',
@@ -108,9 +108,15 @@ export default {
       this.$rsocketclient.connect().then(
         socket => {
 
-          this.connected = true;
+          socket.connectionStatus().subscribe(event => {
+            const kind = event.kind;
+            console.log(kind);
+            if (kind === "CONNECTED")
+              this.connected = true;
+            else if (kind === "CLOSED")
+              this.connected = false;
+          });
 
-          socket.connectionStatus().subscribe(event => console.log(event));
           socket
             .requestStream({
               data: Buffer.from('request-stream'),
@@ -126,8 +132,8 @@ export default {
                 this.data.push(JSON.parse(value.data))
               },
               onSubscribe: sub => {
-                console.log('Request-stream subscribe');
-                sub.request(this.maxRSocketRequestN);
+                console.log('Request-stream subscribe to: ' + this.javaMaxInteger + " messages");
+                sub.request(this.javaMaxInteger);
               }
             });
         },
@@ -136,9 +142,6 @@ export default {
         },
       );
     },
-  },
-  beforeDestroy() {
-    this.$rsocketclient.close();
   }
 }
 </script>
@@ -163,6 +166,7 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
+
   &.q-table--loading thead tr:last-child th
     /* height of all previous header rows */
     top: 48px
