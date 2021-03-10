@@ -1,6 +1,14 @@
-# SpringCloud Gateway RSocket Example
+<center> <h1>SpringCloud Gateway RSocket Example</h1> </center>
 
-What is RSocket ? -> [Check it out](https://rsocket.io/docs/)
+# What is RSocket ? 
+
+Check out the official docs: [RSocket Docs](https://rsocket.io/docs/)
+
+> Most interesting:
+>>Network communication is asynchronous. The RSocket protocol embraces 
+>>this and models all communication as multiplexed streams of messages 
+>>over a single network connection, and never synchronously blocks while 
+>>waiting for a response
 
 In this example I am using a SpringCloud Gateway (reactive) to demonstrate how
 RSocket communication works over **WebSocket**.
@@ -40,7 +48,7 @@ The web browser will open automatically, and you are ready to test it.
 
 #### Ports used
 
-*Server:* 8070 <br>
+*Server:* 8070 <br/>
 *Client:* 8080
 
 ### Test with other tools
@@ -186,6 +194,6 @@ This will produce output like:
 ```
 ## Next up
 
-- Payload integration
-- Multiple routes
-- SpringSecurity
+- [ ] Payload integration
+- [ ] Multiple routes
+- [ ] SpringSecurity
