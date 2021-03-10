@@ -10,6 +10,7 @@ import {
 } from 'rsocket-core';
 import RSocketWebSocketClient from 'rsocket-websocket-client';
 
+const url = 'ws://localhost:8080/server/rsocket';
 
 const keepAlive = 60000;
 const lifetime = 180000;
@@ -19,6 +20,7 @@ const metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string;
 export default async ({Vue}) => {
 
   Vue.prototype.$rsocketclient = new RSocketClient({
+
     setup: {
       dataMimeType,
       keepAlive,
@@ -31,7 +33,7 @@ export default async ({Vue}) => {
     },
     transport: new RSocketWebSocketClient({
         debug: true,
-        url: 'ws://localhost:8080/rsocket',
+        url: url,
       },
       BufferEncoders,
     ),

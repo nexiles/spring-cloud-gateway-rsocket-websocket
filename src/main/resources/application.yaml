@@ -5,7 +5,7 @@ spring:
   rsocket:
     server:
       transport: websocket
-      mapping-path: /rsocket
+      mapping-path: /server/rsocket
 
 logging:
   level:

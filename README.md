@@ -61,7 +61,7 @@ For RSocket development is used [RSC](https://github.com/making/rsc) installed u
 Now you are ready to go. Make sure the server is running and fire:
 
 ```shell
-$ rsc --stream --route=orders --debug ws://localhost:8070/rsocket
+$ rsc --stream --route=orders --debug ws://localhost:8070/server/rsocket
 ```
 
 This will produce output like:
@@ -138,7 +138,7 @@ Data:
 To retrieve the stream using *HTTP* I used [HTTPIE](https://httpie.io/) using:
 
 ````shell
-http :8070/orders --stream
+http :8070/server/orders --stream
 ````
 
 This will produce output like:

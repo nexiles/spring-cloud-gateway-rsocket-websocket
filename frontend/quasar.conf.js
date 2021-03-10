@@ -78,7 +78,7 @@ module.exports = function (/* ctx */) {
       https: false,
       port: 8080,
       proxy: {
-        '/': {
+        '/server': {
           target: 'http://localhost:8070',
           ws: true
         },

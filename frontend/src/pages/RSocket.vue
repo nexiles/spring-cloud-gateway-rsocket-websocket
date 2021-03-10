@@ -101,7 +101,7 @@ export default {
   },
   methods: {
     createNewOrder() {
-      this.axios.get("/orders/new")
+      this.axios.get("/server/orders/new")
     },
     connectRSocket() {
 
