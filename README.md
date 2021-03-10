@@ -1,4 +1,6 @@
+<html lang="en">
 <center> <h1>SpringCloud Gateway RSocket Example</h1> </center>
+</html>
 
 # What is RSocket ? 
 
