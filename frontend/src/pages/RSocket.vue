@@ -114,7 +114,7 @@ export default {
           socket
             .requestStream({
               data: Buffer.from('request-stream'),
-              metadata: this.$encoderoute(this.route),
+              metadata: this.$encodersocketroute(this.route),
             })
             .subscribe({
               onComplete: () =>
