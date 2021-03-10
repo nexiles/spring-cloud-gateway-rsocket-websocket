@@ -1,12 +1,12 @@
 <template>
   <q-page class="flex">
-    <div class="col-1 overflow-auto">
+    <div class="col-1 overflow-auto" style="background: #3d3e4b">
       <q-btn
         class="row q-ma-sm control-button"
         color="blue"
         label="Connect & Subscribe"
         @click="connectRSocket"
-        :disable="connected"
+        v-show="!connected"
       />
       <q-btn
         class="row q-ma-sm control-button"
@@ -119,16 +119,19 @@ export default {
 
           socket
             .requestStream({
-              data: Buffer.from('request-stream'),
+              data: this.$encodejson({jsclient:"request"}),
               metadata: this.$encodersocketroute(this.route),
             })
             .subscribe({
               onComplete: () =>
                 console.log('Request-stream completed'),
-              onError: error =>
-                console.error(`Request-stream error:${error.message}`),
+              onError: error =>{
+                console.error(`Request-stream error:${error.message}`)
+                const details = JSON.stringify(error.source);
+                console.log("ErrorDetails: " + details)
+              },
               onNext: value => {
-                console.log('%s %s', value.data, value.metadata);
+                console.log('Data: %s - Metadata: %s', value.data, value.metadata);
                 this.data.push(JSON.parse(value.data))
               },
               onSubscribe: sub => {

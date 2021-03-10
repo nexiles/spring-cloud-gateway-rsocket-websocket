@@ -61,7 +61,11 @@ For RSocket development is used [RSC](https://github.com/making/rsc) installed u
 Now you are ready to go. Make sure the server is running and fire:
 
 ```shell
+# Basic
 $ rsc --stream --route=orders --debug ws://localhost:8070/server/rsocket
+
+# With data (payload)
+$ rsc --stream --route=orders --debug --data="{\"rscclient\":\"request\"}" ws://localhost:8070/server/rsocket
 ```
 
 This will produce output like:
@@ -194,6 +198,7 @@ This will produce output like:
 ```
 ## Next up
 
-- [ ] Payload integration
+- [X] Payload integration
+- [ ] Custom metadata
 - [ ] Multiple routes
 - [ ] SpringSecurity

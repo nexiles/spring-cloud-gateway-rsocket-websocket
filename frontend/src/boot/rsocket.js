@@ -2,13 +2,14 @@ import {
   BufferEncoders,
   encodeCompositeMetadata,
   encodeRoute,
-  TEXT_PLAIN,
+  APPLICATION_JSON,
   MESSAGE_RSOCKET_COMPOSITE_METADATA,
   MESSAGE_RSOCKET_ROUTING,
   RSocketClient,
-  JsonSerializer,
+  JsonSerializer
 } from 'rsocket-core';
 import RSocketWebSocketClient from 'rsocket-websocket-client';
+import {Buffer} from "rsocket-core/build/LiteBuffer";
 
 const url = 'ws://localhost:8080/server/rsocket';
 
@@ -20,7 +21,6 @@ const metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string;
 export default async ({Vue}) => {
 
   Vue.prototype.$rsocketclient = new RSocketClient({
-
     setup: {
       dataMimeType,
       keepAlive,
@@ -40,12 +40,18 @@ export default async ({Vue}) => {
   });
 
   Vue.prototype.$encodersocketroute = encodersocketroute;
+  Vue.prototype.$encodejson = encodejson;
 }
 
-function encodersocketroute(route) {
-  console.log("encode")
-  return encodeCompositeMetadata([
-    [TEXT_PLAIN, Buffer.from('Hello World')],
-    [MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]
-  ])
+function encodejson(data) {
+  return Buffer.from(JsonSerializer.serialize(data))
+}
+
+function encodersocketroute(route, customMetadata) {
+  const metadata = [[MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]];
+
+  if (customMetadata)
+    metadata.push([APPLICATION_JSON, Buffer.from(JsonSerializer.serialize(customMetadata))])
+
+  return encodeCompositeMetadata(metadata);
 }

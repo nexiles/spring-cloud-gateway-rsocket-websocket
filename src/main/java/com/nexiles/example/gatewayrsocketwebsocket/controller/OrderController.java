@@ -8,6 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.rsocket.annotation.ConnectMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,18 +58,18 @@ public class OrderController {
     private static final String CONTENT_TYPE_KEY = "contentType";
 
     @MessageMapping(value = "orders")
-    public Flux<Order> getOrderEvents(@Headers Map<String, Object> metadata) {
-        logHeaders(metadata, "New RSocket connection to route: 'orders'");
+    public Flux<Order> getOrderEvents(@Headers Map<String, Object> metadata, @Payload(required = false) Map<String, String> payload) {
+        logHeadersAndPayload(metadata, payload, "New RSocket connection to route: 'orders'");
         return Flux.from(orderSink.asFlux());
     }
 
     @SuppressWarnings("unused")
     @ConnectMapping
-    public void rSocketConnect(@Headers Map<String, Object> metadata) {
-        logHeaders(metadata, "New RSocket connection");
+    public void rSocketConnect(@Headers Map<String, Object> metadata, @Payload(required = false) Map<String, String> payload) {
+        logHeadersAndPayload(metadata, payload, "New RSocket connection");
     }
 
-    private void logHeaders(Map<String, Object> metadata, String reason) {
+    private void logHeadersAndPayload(Map<String, Object> metadata, Map<String, String> payload, String reason) {
 
         final Object destination = metadata.getOrDefault(DESTINATION_KEY, null);
         final Object frameType = metadata.getOrDefault(RSOCKET_FRAME_TYPE_KEY, null);
@@ -79,6 +80,11 @@ public class OrderController {
         log.debug("Destination: {}", destination != null && !destination.toString().equals("") ? destination.toString() : "unknown");
         log.debug("FrameType: {}", frameType != null ? frameType.toString() : "unknown");
         log.debug("ContentType: {}", contentType != null ? contentType.toString() : "unknown");
+
+        if (payload != null) {
+            log.debug("Payload: {}", payload.toString());
+        }
+
         log.debug("");
     }
 
