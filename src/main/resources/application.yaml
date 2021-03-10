@@ -1,0 +1,13 @@
+server:
+  port: 8070
+
+spring:
+  rsocket:
+    server:
+      transport: websocket
+      mapping-path: /rsocket
+
+logging:
+  level:
+    com.nexiles: DEBUG
+
