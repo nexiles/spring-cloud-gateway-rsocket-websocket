@@ -47,7 +47,6 @@ public class OrderController {
         return Mono.just(order);
     }
 
-    // http :8070/orders --stream
     @GetMapping(produces = MediaType.APPLICATION_NDJSON_VALUE)
     public Flux<Order> getOrders() {
         return Flux.from(orderSink.asFlux());
@@ -57,19 +56,15 @@ public class OrderController {
     private static final String RSOCKET_FRAME_TYPE_KEY = "rsocketFrameType";
     private static final String CONTENT_TYPE_KEY = "contentType";
 
-    // rsc --stream --route=orders --debug ws://localhost:8070/rsocket - 8070 since ws transport instead tcp
     @MessageMapping(value = "orders")
     public Flux<Order> getOrderEvents(@Headers Map<String, Object> metadata) {
         logHeaders(metadata, "New RSocket connection to route: 'orders'");
         return Flux.from(orderSink.asFlux());
     }
 
+    @SuppressWarnings("unused")
     @ConnectMapping
-    public void rsocketConnect(@Headers Map<String, Object> metadata) {
-
-        final Object destination = metadata.getOrDefault(DESTINATION_KEY, null);
-        final Object frameType = metadata.getOrDefault(RSOCKET_FRAME_TYPE_KEY, null);
-        final Object contentType = metadata.getOrDefault(CONTENT_TYPE_KEY, null);
+    public void rSocketConnect(@Headers Map<String, Object> metadata) {
         logHeaders(metadata, "New RSocket connection");
     }
 
@@ -81,7 +76,7 @@ public class OrderController {
 
         log.debug("");
         log.debug(" - " + reason + " - ");
-        log.debug("Destination: {}", destination != null && destination.equals("") ? destination.toString() : "unknown");
+        log.debug("Destination: {}", destination != null && !destination.toString().equals("") ? destination.toString() : "unknown");
         log.debug("FrameType: {}", frameType != null ? frameType.toString() : "unknown");
         log.debug("ContentType: {}", contentType != null ? contentType.toString() : "unknown");
         log.debug("");
