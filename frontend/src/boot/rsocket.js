@@ -29,7 +29,7 @@ function setupClient(user) {
       metadataMimeType,
       payload: {
         data: undefined,
-        metadata: encodemetadata(user),
+        metadata: encodeMetaData(user),
       },
     },
     transport: new RSocketWebSocketClient({
@@ -41,11 +41,11 @@ function setupClient(user) {
   });
 }
 
-function encodedata(data) {
+function encodeData(data) {
   return Buffer.from(JsonSerializer.serialize(data))
 }
 
-function encodemetadata(user, route, customMetadata) {
+function encodeMetaData(user, route, customMetadata) {
   const metadata = [[MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]];
 
   if(route)
@@ -62,8 +62,8 @@ export default async ({Vue}) => {
   // noinspection JSUnusedGlobalSymbols
   Vue.prototype.$setuprsocketclient = setupClient;
   // noinspection JSUnusedGlobalSymbols
-  Vue.prototype.$encodemetadata = encodemetadata;
+  Vue.prototype.$encodemetadata = encodeMetaData;
   // noinspection JSUnusedGlobalSymbols
-  Vue.prototype.$encodedata = encodedata;
+  Vue.prototype.$encodedata = encodeData;
 }
 
