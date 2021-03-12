@@ -56,7 +56,7 @@
     </div>
     <q-table
       class="col"
-      style="width: 100%; height: 100vh"
+      style="width: 100%; height: calc(100vh - 50px)"
       title="New Orders"
       :data="data"
       :columns="columns"
@@ -300,13 +300,6 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
-
-
-
-
-
-
-
   &.q-table--loading thead tr:last-child th
     /* height of all previous header rows */
     top: 48px
