@@ -1,36 +1,77 @@
 <template>
   <q-page class="flex row">
     <div class="col-2 overflow-auto" style="background: #3d3e4b">
+      <q-input
+        v-model="currentUserName"
+        class="q-ma-sm control-width"
+        type="user"
+        prefix="Selected User:"
+        disable
+        dark
+        rounded
+        filled
+        label-color="white"
+      >
+        <template v-slot:prepend>
+          <q-icon name="person_pin"/>
+        </template>
+      </q-input>
       <q-btn
-        class="row q-ma-sm control-button"
-        color="blue"
-        label="Connect & Subscribe"
-        @click="connectRSocket"
+        class="row q-ma-sm control-width"
+        color="black"
+        label="Admin"
+        @click="setAdmin"
+        icon="person_pin"
         v-show="!connected"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
+        color="black"
+        label="Frodo"
+        @click="setFrodo"
+        icon="person_pin"
+        v-show="!connected"
+      />
+      <q-btn
+        class="row q-ma-sm control-width"
+        color="black"
+        label="John"
+        @click="setJohn"
+        icon="person_pin"
+        v-show="!connected"
+      />
+      <q-separator v-show="!connected" dark/>
+      <q-btn
+        class="row q-ma-sm control-width"
+        color="blue"
+        label="Connect & Subscribe"
+        @click="connectRSocket"
+        v-show="!connected && currentUser"
+      />
+      <q-btn
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to ALL"
         @click="subscribeAll"
         v-show="connected && !allSubscribed && !lotrSubscribed && !gotSubscribed"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to LOTR"
         @click="subscribeLOTR"
         v-show="connected && !allSubscribed && !lotrSubscribed"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to GOT"
         @click="subscribeGOT"
         v-show="connected && !allSubscribed && !gotSubscribed"
       />
+      <q-separator v-show="connected" dark/>
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create any order"
         @click="createNewOrder"
@@ -38,7 +79,7 @@
         icon-right="send"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create LOTR order"
         @click="createNewLOTROrder"
@@ -46,7 +87,7 @@
         icon-right="send"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create GOT order"
         @click="createNewGOTOrder"
@@ -77,6 +118,11 @@
 
 <script>
 import {orderKind} from "../js/Order"
+import {User} from "../js/User"
+
+const admin = new User("admin", "admin");
+const frodo = new User("frodo", "frodo");
+const john = new User("john", "john");
 
 export default {
   name: 'RSocket',
@@ -86,6 +132,8 @@ export default {
       rsocket: undefined,
       data: [],
       connected: false,
+      //auth
+      currentUser: undefined,
       //subscription
       route: "orders",
       allSubscribed: false,
@@ -155,7 +203,24 @@ export default {
       ],
     }
   },
+  computed: {
+    currentUserName: function () {
+      return this.currentUser?.username ?? "Not set";
+    }
+  },
   methods: {
+    setAdmin() {
+      console.log("Set user to: " + admin.username);
+      this.currentUser = admin;
+    },
+    setFrodo() {
+      console.log("Set user to: " + frodo.username);
+      this.currentUser = frodo;
+    },
+    setJohn() {
+      console.log("Set user to: " + john.username);
+      this.currentUser = john;
+    },
     createNewOrder() {
       this.axios.get("/server/orders/new")
     },
@@ -166,7 +231,9 @@ export default {
       this.axios.get("/server/orders/new", {params: {kind: orderKind.GOT}})
     },
     connectRSocket() {
-      this.$rsocketclient.connect().then(
+
+      this.$setuprsocketclient(this.currentUser)
+        .connect().then(
         socket => {
 
           socket.connectionStatus().subscribe(event => {
@@ -182,11 +249,9 @@ export default {
                   timeout: 2000
                 })
               }
-            }
-            else if (kind === "CLOSED") {
+            } else if (kind === "CLOSED") {
               this.connected = false;
-            }
-            else if (kind === "ERROR") {
+            } else if (kind === "ERROR") {
               this.$q.notify({
                 type: 'negative',
                 message: 'Connection error'
@@ -201,7 +266,7 @@ export default {
           console.log('error:', error);
           this.$q.notify({
             type: 'negative',
-            message: `Connection error: ` + JSON.stringify(error)
+            message: `Connection error. Authenticated? `
           })
         },
       );
@@ -210,7 +275,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request all"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.ALL));
@@ -219,7 +284,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request lotr"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.LOTR));
@@ -228,7 +293,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request got"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.GOT));
@@ -300,12 +365,14 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
+
+
   &.q-table--loading thead tr:last-child th
     /* height of all previous header rows */
     top: 48px
 
-.control-button
-  width: calc(100% - 20px)
+.control-width
+  width: calc(100% - 15px)
   max-height: 60px
 
 </style>

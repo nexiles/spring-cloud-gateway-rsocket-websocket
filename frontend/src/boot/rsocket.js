@@ -1,9 +1,11 @@
 import {
   BufferEncoders,
   encodeCompositeMetadata,
+  encodeSimpleAuthMetadata,
   encodeRoute,
   APPLICATION_JSON,
   MESSAGE_RSOCKET_COMPOSITE_METADATA,
+  MESSAGE_RSOCKET_AUTHENTICATION,
   MESSAGE_RSOCKET_ROUTING,
   RSocketClient,
   JsonSerializer
@@ -18,10 +20,8 @@ const lifetime = 180000;
 const dataMimeType = 'application/json';
 const metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string;
 
-export default async ({Vue}) => {
-
-  // noinspection JSUnusedGlobalSymbols
-  Vue.prototype.$rsocketclient = new RSocketClient({
+function setupClient(user) {
+  return new RSocketClient({
     setup: {
       dataMimeType,
       keepAlive,
@@ -29,7 +29,7 @@ export default async ({Vue}) => {
       metadataMimeType,
       payload: {
         data: undefined,
-        metadata: undefined,
+        metadata: encodemetadata(user),
       },
     },
     transport: new RSocketWebSocketClient({
@@ -39,22 +39,31 @@ export default async ({Vue}) => {
       BufferEncoders,
     ),
   });
-
-  // noinspection JSUnusedGlobalSymbols
-  Vue.prototype.$encodemetadata = encodemetadata;
-  // noinspection JSUnusedGlobalSymbols
-  Vue.prototype.$encodedata = encodedata;
 }
 
 function encodedata(data) {
   return Buffer.from(JsonSerializer.serialize(data))
 }
 
-function encodemetadata(route, customMetadata) {
-  const metadata = [[MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]];
+function encodemetadata(user, route, customMetadata) {
+  const metadata = [[MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]];
+
+  if(route)
+    metadata.push([MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]);
 
   if (customMetadata)
     metadata.push([APPLICATION_JSON, Buffer.from(JsonSerializer.serialize(customMetadata))])
 
   return encodeCompositeMetadata(metadata);
 }
+
+export default async ({Vue}) => {
+
+  // noinspection JSUnusedGlobalSymbols
+  Vue.prototype.$setuprsocketclient = setupClient;
+  // noinspection JSUnusedGlobalSymbols
+  Vue.prototype.$encodemetadata = encodemetadata;
+  // noinspection JSUnusedGlobalSymbols
+  Vue.prototype.$encodedata = encodedata;
+}
+
