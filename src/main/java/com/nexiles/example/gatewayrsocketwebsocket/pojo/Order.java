@@ -1,22 +1,31 @@
 package com.nexiles.example.gatewayrsocketwebsocket.pojo;
 
-import lombok.Value;
+import com.nexiles.example.gatewayrsocketwebsocket.states.OrderKind;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.ToString;
 
 import java.time.OffsetDateTime;
 
-@Value
+@Data
+@Builder
+@ToString
+@AllArgsConstructor
 public class Order {
 
-    OffsetDateTime dateTime;
+    private final OffsetDateTime dateTime;
 
-    Long entry;
+    private final Long entry;
 
-    Integer number;
+    private final Integer number;
 
-    String name;
+    private final String name;
 
-    String address;
+    private final String address;
 
-    String item;
+    private final OrderKind kind;
+
+    private final String item;
 
 }

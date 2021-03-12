@@ -1,6 +1,6 @@
 <template>
-  <q-page class="flex">
-    <div class="col-1 overflow-auto" style="background: #3d3e4b">
+  <q-page class="flex row">
+    <div class="col-2 overflow-auto" style="background: #3d3e4b">
       <q-btn
         class="row q-ma-sm control-button"
         color="blue"
@@ -10,10 +10,48 @@
       />
       <q-btn
         class="row q-ma-sm control-button"
+        color="orange"
+        label="Subscribe to ALL"
+        @click="subscribeAll"
+        v-show="connected && !allSubscribed && !lotrSubscribed && !gotSubscribed"
+      />
+      <q-btn
+        class="row q-ma-sm control-button"
+        color="orange"
+        label="Subscribe to LOTR"
+        @click="subscribeLOTR"
+        v-show="connected && !allSubscribed && !lotrSubscribed"
+      />
+      <q-btn
+        class="row q-ma-sm control-button"
+        color="orange"
+        label="Subscribe to GOT"
+        @click="subscribeGOT"
+        v-show="connected && !allSubscribed && !gotSubscribed"
+      />
+      <q-btn
+        class="row q-ma-sm control-button"
         color="green"
-        icon-right="send"
-        label="Create new order"
+        label="Create any order"
         @click="createNewOrder"
+        v-show="connected"
+        icon-right="send"
+      />
+      <q-btn
+        class="row q-ma-sm control-button"
+        color="green"
+        label="Create LOTR order"
+        @click="createNewLOTROrder"
+        v-show="connected"
+        icon-right="send"
+      />
+      <q-btn
+        class="row q-ma-sm control-button"
+        color="green"
+        label="Create GOT order"
+        @click="createNewGOTOrder"
+        v-show="connected"
+        icon-right="send"
       />
     </div>
     <q-table
@@ -38,16 +76,25 @@
 </template>
 
 <script>
+import {orderKind} from "../js/Order"
+
 export default {
   name: 'RSocket',
   data() {
     return {
+      //setup
+      rsocket: undefined,
       data: [],
       connected: false,
-      rowsPerPage: [0],
+      //subscription
       route: "orders",
+      allSubscribed: false,
+      lotrSubscribed: false,
+      gotSubscribed: false,
       customMetadataKey: "custom-meta",
       javaMaxInteger: 2147483647,
+      // table
+      rowsPerPage: [0],
       columns: [
         {
           name: 'dateTime',
@@ -71,6 +118,14 @@ export default {
           label: 'Number',
           align: 'center',
           field: row => row.number,
+          sortable: true
+        },
+        {
+          name: 'kind',
+          required: true,
+          label: 'Kind',
+          align: 'center',
+          field: row => row.kind,
           sortable: true
         },
         {
@@ -104,47 +159,122 @@ export default {
     createNewOrder() {
       this.axios.get("/server/orders/new")
     },
+    createNewLOTROrder() {
+      this.axios.get("/server/orders/new", {params: {kind: orderKind.LOTR}})
+    },
+    createNewGOTOrder() {
+      this.axios.get("/server/orders/new", {params: {kind: orderKind.GOT}})
+    },
     connectRSocket() {
-
       this.$rsocketclient.connect().then(
         socket => {
 
           socket.connectionStatus().subscribe(event => {
             const kind = event.kind;
             console.log(kind);
-            if (kind === "CONNECTED")
-              this.connected = true;
-            else if (kind === "CLOSED")
+            if (kind === "CONNECTED") {
+
+              if (!this.connected) { // Fires twice
+                this.connected = true;
+                this.$q.notify({
+                  spinner: true,
+                  message: 'RSocket connected',
+                  timeout: 2000
+                })
+              }
+            }
+            else if (kind === "CLOSED") {
               this.connected = false;
+            }
+            else if (kind === "ERROR") {
+              this.$q.notify({
+                type: 'negative',
+                message: 'Connection error'
+              })
+            }
           });
 
-          socket
-            .requestStream({
-              data: this.$encodedata({jsclient:"request"}),
-              metadata: this.$encodemetadata(this.route, {data:"custom metadata value from js"}),
-            })
-            .subscribe({
-              onComplete: () =>
-                console.log('Request-stream completed'),
-              onError: error =>{
-                console.error(`Request-stream error:${error.message}`)
-                const details = JSON.stringify(error.source);
-                console.log("ErrorDetails: " + details)
-              },
-              onNext: value => {
-                console.log('Data: %s - Metadata: %s', value.data, value.metadata);
-                this.data.push(JSON.parse(value.data))
-              },
-              onSubscribe: sub => {
-                console.log('Request-stream subscribe to: ' + this.javaMaxInteger + " messages");
-                sub.request(this.javaMaxInteger);
-              }
-            });
+          this.rsocket = socket;
+
         },
         error => {
           console.log('error:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: `Connection error: ` + JSON.stringify(error)
+          })
         },
       );
+    },
+    subscribeAll() {
+      this.rsocket
+        .requestStream({
+          data: this.$encodedata({jsclient: "request all"}),
+          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
+        })
+        //.subscribe(subscription => this.subscriptionHandler(subscription))
+        .subscribe(this.subscriptionHandler(orderKind.ALL));
+    },
+    subscribeLOTR() {
+      this.rsocket
+        .requestStream({
+          data: this.$encodedata({jsclient: "request lotr"}),
+          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
+        })
+        //.subscribe(subscription => this.subscriptionHandler(subscription))
+        .subscribe(this.subscriptionHandler(orderKind.LOTR));
+    },
+    subscribeGOT() {
+      this.rsocket
+        .requestStream({
+          data: this.$encodedata({jsclient: "request got"}),
+          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
+        })
+        //.subscribe(subscription => this.subscriptionHandler(subscription))
+        .subscribe(this.subscriptionHandler(orderKind.GOT));
+    },
+    routeWithIdentifier(identifier) {
+      return this.route + "." + identifier;
+    },
+    subscriptionHandler(kind) {
+      return {
+        onComplete: () =>
+          console.log('Request-stream completed'),
+        onError: error => {
+          console.error(`Request-stream error:${error.message}`)
+          const details = JSON.stringify(error.source);
+          console.log("ErrorDetails: " + details)
+        },
+        onNext: value => {
+          console.log('Data: %s - Metadata: %s', value.data, value.metadata);
+          this.data.push(JSON.parse(value.data))
+        },
+        onSubscribe: sub => {
+          console.log('Request-stream subscribe to: ' + this.javaMaxInteger + " '" + kind + "' messages");
+
+          this.$q.notify({
+            message: "Subscribed to '" + kind + "' orders",
+            icon: 'announcement'
+          })
+
+          switch (kind) {
+            case orderKind.ALL: {
+              this.allSubscribed = true;
+              break;
+            }
+            case orderKind.LOTR: {
+              this.lotrSubscribed = true;
+              break;
+            }
+            case orderKind.GOT: {
+              this.gotSubscribed = true;
+              break;
+            }
+          }
+
+          sub.request(this.javaMaxInteger);
+        }
+      };
     },
   }
 }
@@ -170,6 +300,12 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
+
+
+
+
+
+
 
   &.q-table--loading thead tr:last-child th
     /* height of all previous header rows */

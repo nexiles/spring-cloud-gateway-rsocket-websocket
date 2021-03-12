@@ -16,7 +16,7 @@ public class OrderScheduler {
 
     @Scheduled(fixedDelay = 5000)
     public void scheduledOrder() {
-        eventPublisher.publishEvent(NewOrderEvent.forOrder(orderCreator.createOrder()));
+        eventPublisher.publishEvent(NewOrderEvent.forOrder(orderCreator.createRandomOrder()));
     }
 
 }
