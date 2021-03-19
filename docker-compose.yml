@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  keycloak:
+    image: jboss/keycloak:latest
+    restart: unless-stopped
+    volumes:
+      - ./docker/keycloak/config:/opt/jboss/import
+    environment:
+      KEYCLOAK_IMPORT: /opt/jboss/import/realm-export.json
+      KEYCLOAK_USER: "kcadmin"
+      KEYCLOAK_PASSWORD: "kcadmin"
+      KEYCLOAK_LOGLEVEL: DEBUG
+      PROXY_ADDRESS_FORWARDING: "true"
+    ports:
+      - "8060:8080"

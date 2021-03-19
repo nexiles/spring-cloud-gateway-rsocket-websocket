@@ -2,11 +2,12 @@ package com.nexiles.example.gatewayrsocketwebsocket.controller;
 
 import com.nexiles.example.gatewayrsocketwebsocket.OrderCreator;
 import com.nexiles.example.gatewayrsocketwebsocket.config.RSocketConfig;
-import com.nexiles.example.gatewayrsocketwebsocket.config.RSocketSecurityConfig;
+import com.nexiles.example.gatewayrsocketwebsocket.config.SecurityConstants;
 import com.nexiles.example.gatewayrsocketwebsocket.events.NewOrderEvent;
 import com.nexiles.example.gatewayrsocketwebsocket.pojo.CustomMetadata;
 import com.nexiles.example.gatewayrsocketwebsocket.pojo.Order;
 import com.nexiles.example.gatewayrsocketwebsocket.states.OrderKind;
+import com.nexiles.example.gatewayrsocketwebsocket.utility.SecurityUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
+import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,9 +41,12 @@ public class OrderController {
 
     private final Sinks.Many<Order> orderSink;
 
-    public OrderController(OrderCreator orderCreator) {
+    private final SecurityUtility securityUtility;
+
+    public OrderController(OrderCreator orderCreator, SecurityUtility securityUtility) {
         this.orderCreator = orderCreator;
         this.orderSink = Sinks.many().multicast().directBestEffort(); // Publish new order to new subscribers and do not delay
+        this.securityUtility = securityUtility;
     }
 
     @EventListener
@@ -52,7 +57,10 @@ public class OrderController {
     }
 
     @GetMapping("/new")
-    public Mono<Order> createNewOrder(@RequestParam(value = "kind", required = false) String identifier) {
+    public Mono<Order> createNewOrder(@RequestParam(value = "kind", required = false) String identifier, Principal principal) {
+
+        final SecurityUtility.Provider provider = securityUtility.resolveSecurityProvider(principal);
+        log.info("New order request from '{}' and provider '{}'", securityUtility.resolveUserName(principal), provider);
 
         final Order order;
         if (identifier != null) {
@@ -92,9 +100,9 @@ public class OrderController {
         final GrantedAuthority authority = firstAuthority.get();
 
         return Flux.from(orderSink.asFlux().filter(order ->
-                authority.getAuthority().equals(RSocketSecurityConfig.ADMIN_ROLE) ||
-                        (requestedOrderKind.equals(OrderKind.LOTR) && authority.getAuthority().equals(RSocketSecurityConfig.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
-                        (requestedOrderKind.equals(OrderKind.GOT) && authority.getAuthority().equals(RSocketSecurityConfig.GOT_ROLE) && order.getKind().equals(requestedOrderKind))
+                authority.getAuthority().equals(SecurityConstants.ADMIN_ROLE) ||
+                        (requestedOrderKind.equals(OrderKind.LOTR) && authority.getAuthority().equals(SecurityConstants.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
+                        (requestedOrderKind.equals(OrderKind.GOT) && authority.getAuthority().equals(SecurityConstants.GOT_ROLE) && order.getKind().equals(requestedOrderKind))
         ));
     }
 
