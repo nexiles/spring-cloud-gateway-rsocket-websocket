@@ -1,44 +1,52 @@
 <template>
   <q-page class="flex row">
     <div class="col-2 overflow-auto" style="background: #3d3e4b">
-      <q-input
-        v-model="currentUserName"
-        class="q-ma-sm control-width"
-        type="user"
-        prefix="Selected User:"
-        disable
-        dark
-        rounded
-        filled
-        label-color="white"
+      <q-card dark bordered flat square class="bg-grey-9 my-card">
+        <q-card-section>
+          <div class="text-h6 text-center">Identity Provider</div>
+        </q-card-section>
+
+        <q-separator dark inset=""/>
+
+        <q-card-section>
+          <q-btn-toggle
+            v-model="identityProvider"
+            spread
+            no-caps
+            disable
+            toggle-color="orange"
+            color="white"
+            text-color="black"
+            :options="identityProviders"
+          />
+        </q-card-section>
+      </q-card>
+      <q-input class="q-ma-sm"
+               dark v-model="user"
+               filled hint="Username"
+               v-show="!authenticated && !isIdentityProviderKeyCloak"
+      />
+      <q-input class="q-ma-sm"
+               dark v-model="password"
+               filled
+               :type="showPassword ? 'password' : 'text'"
+               hint="Password"
+               v-show="!authenticated && !isIdentityProviderKeyCloak"
       >
-        <template v-slot:prepend>
-          <q-icon name="person_pin"/>
+        <template v-slot:append>
+          <q-icon
+            :name="showPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showPassword = !showPassword"
+          />
         </template>
       </q-input>
       <q-btn
         class="row q-ma-sm control-width"
         color="black"
-        label="Admin"
-        @click="setAdmin"
-        icon="person_pin"
-        v-show="!connected"
-      />
-      <q-btn
-        class="row q-ma-sm control-width"
-        color="black"
-        label="Frodo"
-        @click="setFrodo"
-        icon="person_pin"
-        v-show="!connected"
-      />
-      <q-btn
-        class="row q-ma-sm control-width"
-        color="black"
-        label="John"
-        @click="setJohn"
-        icon="person_pin"
-        v-show="!connected"
+        label="Login"
+        @click="isAuthenticated"
+        v-show="!authenticated && !isIdentityProviderKeyCloak && user && password"
       />
       <q-separator v-show="!connected" dark/>
       <q-btn
@@ -46,7 +54,7 @@
         color="blue"
         label="Connect & Subscribe"
         @click="connectRSocket"
-        v-show="!connected && currentUser"
+        v-show="!connected && authenticated"
       />
       <q-btn
         class="row q-ma-sm control-width"
@@ -120,10 +128,6 @@
 import {orderKind} from "../js/Order"
 import {User} from "../js/User"
 
-const admin = new User("admin", "admin");
-const frodo = new User("frodo", "frodo");
-const john = new User("john", "john");
-
 export default {
   name: 'RSocket',
   data() {
@@ -133,7 +137,16 @@ export default {
       data: [],
       connected: false,
       //auth
+      identityProviders: [
+        {label: 'SpringSecurity', value: 'SpringSecurity'},
+        {label: 'KeyCloak', value: 'KeyCloak'}
+      ],
+      identityProvider: undefined,
       currentUser: undefined,
+      user: undefined,
+      password: undefined,
+      showPassword: true,
+      authenticated: false,
       //subscription
       route: "orders",
       allSubscribed: false,
@@ -206,33 +219,51 @@ export default {
   computed: {
     currentUserName: function () {
       return this.currentUser?.username ?? "Not set";
+    },
+    isIdentityProviderKeyCloak: function () {
+      return this.identityProvider === "KeyCloak"
     }
   },
+  async mounted() {
+    const identityProvider = await this.axios.get("/provider");
+    this.identityProvider = identityProvider.data;
+    console.log("IdentityProvider: " + this.identityProvider)
+    this.authenticated = this.isIdentityProviderKeyCloak;
+  },
   methods: {
-    setAdmin() {
-      console.log("Set user to: " + admin.username);
-      this.currentUser = admin;
+    getUser() {
+      if (this.user && this.password)
+        return new User(this.user, this.password);
+      return undefined;
     },
-    setFrodo() {
-      console.log("Set user to: " + frodo.username);
-      this.currentUser = frodo;
-    },
-    setJohn() {
-      console.log("Set user to: " + john.username);
-      this.currentUser = john;
+    async isAuthenticated() {
+      const authenticated = await this.axios.get("/security/authenticated", {auth: this.getUser()});
+      if (authenticated?.status === 200) {
+        this.authenticated = true;
+        this.$q.notify({
+          message: "Successfully authenticated",
+          type: "positive",
+          icon: 'announcement'
+        })
+      } else {
+        this.$q.notify({
+          type: "negative",
+          icon: 'announcement'
+        })
+      }
     },
     createNewOrder() {
-      this.axios.get("/server/orders/new")
+      this.axios.get("/server/orders/new", {auth: this.getUser()})
     },
     createNewLOTROrder() {
-      this.axios.get("/server/orders/new", {params: {kind: orderKind.LOTR}})
+      this.axios.get("/server/orders/new", {auth: this.getUser(), params: {kind: orderKind.LOTR}})
     },
     createNewGOTOrder() {
-      this.axios.get("/server/orders/new", {params: {kind: orderKind.GOT}})
+      this.axios.get("/server/orders/new", {auth: this.getUser(), params: {kind: orderKind.GOT}})
     },
     connectRSocket() {
 
-      this.$setuprsocketclient(this.currentUser)
+      this.$setuprsocketclient(this.getUser())
         .connect().then(
         socket => {
 
@@ -251,6 +282,10 @@ export default {
               }
             } else if (kind === "CLOSED") {
               this.connected = false;
+              this.$q.notify({
+                type: 'warning',
+                message: 'Connection closed'
+              })
             } else if (kind === "ERROR") {
               this.$q.notify({
                 type: 'negative',
@@ -275,7 +310,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request all"}),
-          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.ALL));
@@ -284,7 +319,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request lotr"}),
-          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.LOTR));
@@ -293,7 +328,7 @@ export default {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request got"}),
-          metadata: this.$encodemetadata(this.currentUser, this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.GOT));
@@ -302,6 +337,7 @@ export default {
       return this.route + "." + identifier;
     },
     subscriptionHandler(kind) {
+      // noinspection JSUnusedGlobalSymbols
       return {
         onComplete: () =>
           console.log('Request-stream completed'),
@@ -365,6 +401,8 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
+
+
 
 
   &.q-table--loading thead tr:last-child th

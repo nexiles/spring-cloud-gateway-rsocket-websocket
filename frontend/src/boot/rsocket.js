@@ -13,7 +13,7 @@ import {
 import RSocketWebSocketClient from 'rsocket-websocket-client';
 import {Buffer} from "rsocket-core/build/LiteBuffer";
 
-const url = 'ws://localhost:8080/server/rsocket';
+const url = 'ws://localhost:8070/server/rsocket';
 
 const keepAlive = 60000;
 const lifetime = 180000;
@@ -46,9 +46,14 @@ function encodeData(data) {
 }
 
 function encodeMetaData(user, route, customMetadata) {
-  const metadata = [[MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]];
+  const metadata = [];
 
-  if(route)
+  console.debug("User: " + user + " Route: " + route + " Meta: " + customMetadata)
+
+  if (user)
+    metadata.push([MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]);
+
+  if (route)
     metadata.push([MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]);
 
   if (customMetadata)

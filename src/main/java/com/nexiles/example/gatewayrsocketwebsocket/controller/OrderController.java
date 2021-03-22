@@ -60,7 +60,6 @@ public class OrderController {
     public Mono<Order> createNewOrder(@RequestParam(value = "kind", required = false) String identifier, Principal principal) {
 
         final SecurityUtility.Provider provider = securityUtility.resolveSecurityProvider(principal);
-        log.info("New order request from '{}' and provider '{}'", securityUtility.resolveUserName(principal), provider);
 
         final Order order;
         if (identifier != null) {
@@ -70,7 +69,7 @@ public class OrderController {
             order = orderCreator.createRandomOrder();
         }
 
-        log.info("New order request: {}", order.toString());
+        log.info("New order request from '{}' and provider '{}': {}", securityUtility.resolveUserName(principal), provider, order);
         orderSink.tryEmitNext(order);
         return Mono.just(order);
     }
@@ -108,10 +107,11 @@ public class OrderController {
 
     @SuppressWarnings("unused")
     @ConnectMapping
-    public void rSocketConnect(@AuthenticationPrincipal UserDetails user,
+    public void rSocketConnect(@AuthenticationPrincipal Mono<UserDetails> user,
                                @Headers Map<String, Object> metadata,
                                @Payload(required = false) Map<String, String> payload) {
-        logUserHeadersAndPayload(user, metadata, payload, "New RSocket connection");
+
+        user.subscribe(userDetails -> logUserHeadersAndPayload(userDetails, metadata, payload, "New RSocket connection"));
     }
 
     private void logUserHeadersAndPayload(UserDetails user, Map<String, Object> metadata,

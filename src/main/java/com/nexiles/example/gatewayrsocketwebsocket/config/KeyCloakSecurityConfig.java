@@ -30,7 +30,9 @@ public class KeyCloakSecurityConfig {
         logoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/");
         http.logout(logout -> logout.logoutSuccessHandler(logoutSuccessHandler));
 
-        return SecurityConstants.configureExchange(http.authorizeExchange()).build();
+        http.csrf().disable();
+
+        return http.authorizeExchange().anyExchange().authenticated().and().build();
     }
 
 }
