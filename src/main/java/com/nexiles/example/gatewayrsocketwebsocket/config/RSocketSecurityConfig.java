@@ -16,7 +16,6 @@ import org.springframework.security.rsocket.api.PayloadInterceptor;
 import org.springframework.security.rsocket.api.PayloadInterceptorChain;
 import org.springframework.security.rsocket.core.PayloadSocketAcceptorInterceptor;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @Configuration
@@ -37,11 +36,15 @@ public class RSocketSecurityConfig {
         security.authorizePayload(authorize -> authorize.anyExchange().authenticated())
                 .addPayloadInterceptor(this.payLoadInterceptor())
                 .simpleAuthentication(Customizer.withDefaults())
-//                .jwt(Customizer.withDefaults())
+                .jwt(Customizer.withDefaults())
         ;
         return security.build();
     }
 
+    /**
+     * Just for demonstration purpose.
+     * @return {@code Mono<Void>} to indicate when processing is complete
+     */
     private PayloadInterceptor payLoadInterceptor() {
         return (PayloadExchange exchange, PayloadInterceptorChain chain) -> {
             final PayloadExchangeType exchangeType = exchange.getType();
@@ -55,7 +58,7 @@ public class RSocketSecurityConfig {
             log.debug("DataMimeType: {}", dataMimeType);
             log.debug("");
 
-            return Mono.empty();
+            return chain.next(exchange);
         };
     }
 
