@@ -1,36 +1,85 @@
 <template>
   <q-page class="flex row">
     <div class="col-2 overflow-auto" style="background: #3d3e4b">
+      <q-card dark bordered flat square class="bg-grey-9 my-card">
+        <q-card-section>
+          <div class="text-h6 text-center">Identity Provider</div>
+        </q-card-section>
+
+        <q-separator dark inset=""/>
+
+        <q-card-section>
+          <q-btn-toggle
+            v-model="identityProvider"
+            spread
+            no-caps
+            disable
+            toggle-color="orange"
+            color="white"
+            text-color="black"
+            :options="identityProviders"
+          />
+        </q-card-section>
+      </q-card>
+      <q-input class="q-ma-sm"
+               dark v-model="user"
+               filled hint="Username"
+               v-show="!authenticated && !isIdentityProviderKeyCloak"
+      />
+      <q-input class="q-ma-sm"
+               dark v-model="password"
+               filled
+               :type="showPassword ? 'password' : 'text'"
+               hint="Password"
+               v-show="!authenticated && !isIdentityProviderKeyCloak"
+      >
+        <template v-slot:append>
+          <q-icon
+            :name="showPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showPassword = !showPassword"
+          />
+        </template>
+      </q-input>
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
+        color="black"
+        label="Login"
+        @click="isAuthenticated"
+        v-show="!authenticated && !isIdentityProviderKeyCloak && user && password"
+      />
+      <q-separator v-show="!connected" dark/>
+      <q-btn
+        class="row q-ma-sm control-width"
         color="blue"
         label="Connect & Subscribe"
         @click="connectRSocket"
-        v-show="!connected"
+        v-show="!connected && authenticated"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to ALL"
         @click="subscribeAll"
         v-show="connected && !allSubscribed && !lotrSubscribed && !gotSubscribed"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to LOTR"
         @click="subscribeLOTR"
         v-show="connected && !allSubscribed && !lotrSubscribed"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="orange"
         label="Subscribe to GOT"
         @click="subscribeGOT"
         v-show="connected && !allSubscribed && !gotSubscribed"
       />
+      <q-separator v-show="connected" dark/>
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create any order"
         @click="createNewOrder"
@@ -38,7 +87,7 @@
         icon-right="send"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create LOTR order"
         @click="createNewLOTROrder"
@@ -46,7 +95,7 @@
         icon-right="send"
       />
       <q-btn
-        class="row q-ma-sm control-button"
+        class="row q-ma-sm control-width"
         color="green"
         label="Create GOT order"
         @click="createNewGOTOrder"
@@ -77,6 +126,8 @@
 
 <script>
 import {orderKind} from "../js/Order"
+import {User} from "../js/User"
+import {Auth, authentication} from "src/js/Auth";
 
 export default {
   name: 'RSocket',
@@ -86,6 +137,17 @@ export default {
       rsocket: undefined,
       data: [],
       connected: false,
+      //auth
+      identityProviders: [
+        {label: 'SpringSecurity', value: 'SpringSecurity'},
+        {label: 'KeyCloak', value: 'KeyCloak'}
+      ],
+      identityProvider: undefined,
+      currentUser: undefined,
+      user: undefined,
+      password: undefined,
+      showPassword: true,
+      authenticated: false,
       //subscription
       route: "orders",
       allSubscribed: false,
@@ -155,18 +217,67 @@ export default {
       ],
     }
   },
+  computed: {
+    currentUserName: function () {
+      return this.currentUser?.username ?? "Not set";
+    },
+    isIdentityProviderKeyCloak: function () {
+      return this.identityProvider === "KeyCloak"
+    }
+  },
+  async mounted() {
+    const identityProvider = await this.axios.get("/provider");
+    this.identityProvider = identityProvider.data;
+    console.log("IdentityProvider: " + this.identityProvider)
+    this.authenticated = this.isIdentityProviderKeyCloak;
+  },
   methods: {
+    getUser() {
+      if (this.user && this.password)
+        return new User(this.user, this.password);
+      return undefined;
+    },
+    async isAuthenticated() {
+      const user = this.getUser();
+      const authenticated = await this.axios.get("/security/authenticated", {auth: user});
+      if (authenticated?.status === 200) {
+        this.authenticated = true;
+        this.$q.notify({
+          message: `Successfully authenticated as '${user.username}'`,
+          type: "positive",
+          icon: 'announcement'
+        })
+      } else {
+        this.$q.notify({
+          message: `Cannot authenticate as '${user.username}'`,
+          type: "negative",
+          icon: 'announcement'
+        })
+      }
+    },
+    async getJWT() {
+      const jwt = await this.axios.get("/security/jwt");
+      return jwt.data;
+    },
+    async getAuth() {
+      if (this.isIdentityProviderKeyCloak) {
+        return new Auth(authentication.BEARER, await this.getJWT());
+      }
+      return new Auth(authentication.BASIC, this.getUser());
+    },
     createNewOrder() {
-      this.axios.get("/server/orders/new")
+      this.axios.get("/server/orders/new", {auth: this.getUser()})
     },
     createNewLOTROrder() {
-      this.axios.get("/server/orders/new", {params: {kind: orderKind.LOTR}})
+      this.axios.get("/server/orders/new", {auth: this.getUser(), params: {kind: orderKind.LOTR}})
     },
     createNewGOTOrder() {
-      this.axios.get("/server/orders/new", {params: {kind: orderKind.GOT}})
+      this.axios.get("/server/orders/new", {auth: this.getUser(), params: {kind: orderKind.GOT}})
     },
-    connectRSocket() {
-      this.$rsocketclient.connect().then(
+    async connectRSocket() {
+
+      this.$setuprsocketclient(await this.getAuth())
+        .connect().then(
         socket => {
 
           socket.connectionStatus().subscribe(event => {
@@ -182,11 +293,13 @@ export default {
                   timeout: 2000
                 })
               }
-            }
-            else if (kind === "CLOSED") {
+            } else if (kind === "CLOSED") {
               this.connected = false;
-            }
-            else if (kind === "ERROR") {
+              this.$q.notify({
+                type: 'warning',
+                message: 'Connection closed'
+              })
+            } else if (kind === "ERROR") {
               this.$q.notify({
                 type: 'negative',
                 message: 'Connection error'
@@ -201,34 +314,34 @@ export default {
           console.log('error:', error);
           this.$q.notify({
             type: 'negative',
-            message: `Connection error: ` + JSON.stringify(error)
+            message: `Connection error. Authenticated? `
           })
         },
       );
     },
-    subscribeAll() {
+    async subscribeAll() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request all"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.ALL));
     },
-    subscribeLOTR() {
+    async subscribeLOTR() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request lotr"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.LOTR));
     },
-    subscribeGOT() {
+    async subscribeGOT() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request got"}),
-          metadata: this.$encodemetadata(this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.GOT));
@@ -237,6 +350,7 @@ export default {
       return this.route + "." + identifier;
     },
     subscriptionHandler(kind) {
+      // noinspection JSUnusedGlobalSymbols
       return {
         onComplete: () =>
           console.log('Request-stream completed'),
@@ -300,12 +414,16 @@ export default {
     top: 0
 
   /* this is when the loading indicator appears */
+
+
+
+
   &.q-table--loading thead tr:last-child th
     /* height of all previous header rows */
     top: 48px
 
-.control-button
-  width: calc(100% - 20px)
+.control-width
+  width: calc(100% - 15px)
   max-height: 60px
 
 </style>

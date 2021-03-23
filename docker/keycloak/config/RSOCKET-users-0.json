@@ -1,0 +1,110 @@
+{
+  "realm": "RSOCKET",
+  "users": [
+    {
+      "id": "923adfa4-37cf-447e-b865-17677e185931",
+      "createdTimestamp": 1616156883333,
+      "username": "admin",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "firstName": "Admin",
+      "lastName": "Istrator",
+      "email": "admin@istrator.com",
+      "credentials": [
+        {
+          "id": "a70573c3-d7b7-4703-a84c-9dfac7a43227",
+          "type": "password",
+          "createdDate": 1616156891720,
+          "secretData": "{\"value\":\"ZMb8MNMA6c0Z6vviXxQXisOOUUmp3xXOX58aoh7hJ9bfwzk4hVXOKGsFhKDFtoEzk+QAoQyb4kgGwHaGCre5eg==\",\"salt\":\"iTbq29zZPhqgj9SWYcOiuw==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "offline_access",
+        "ADMIN",
+        "uma_authorization"
+      ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "0b1e7c23-fa1d-4257-aeb7-255a4920cd26",
+      "createdTimestamp": 1616156903809,
+      "username": "frodo",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "firstName": "Frodo",
+      "lastName": "Baggins",
+      "email": "frodo@baggins.com",
+      "credentials": [
+        {
+          "id": "13cf18c4-7e78-499b-befe-5f3eab11cf9c",
+          "type": "password",
+          "createdDate": 1616156914782,
+          "secretData": "{\"value\":\"LCINuS4Mv9TX4aHPE7SySxMFesmmleM6cCSds6bzsdlsLgfusbRb2R//UVUKGJQzHyXTT80D1ZF+KJ0U37fVnA==\",\"salt\":\"Hm75k4FPMusW2UCdLjBYsg==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "offline_access",
+        "MIDDLEEARTH",
+        "uma_authorization"
+      ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "9145e987-a0e8-4ade-a9be-4fb807b2ada7",
+      "createdTimestamp": 1616156932570,
+      "username": "john",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "firstName": "John",
+      "lastName": "Snow",
+      "email": "john@snow.com",
+      "credentials": [
+        {
+          "id": "74192a28-5464-41de-804f-be14acf196fe",
+          "type": "password",
+          "createdDate": 1616156940984,
+          "secretData": "{\"value\":\"hXv9HCMc2G88Ub+TSx3FtUMI3wYuWhKP6KVVZpZPXNwT0ZFE1+Gh+9aY3lPZpxfQYkYiWLL4erYrT4abDxlj+Q==\",\"salt\":\"jPbtMokZl+jC3HK/4rESJw==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "offline_access",
+        "WESTEROS",
+        "uma_authorization"
+      ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  keycloak:
+    image: jboss/keycloak:latest
+    restart: unless-stopped
+    volumes:
+      - ./docker/keycloak/config:/opt/jboss/import
+    environment:
+      KEYCLOAK_USER: "kcadmin"
+      KEYCLOAK_PASSWORD: "kcadmin"
+      KEYCLOAK_LOGLEVEL: DEBUG
+      PROXY_ADDRESS_FORWARDING: "true"
+    command: "-b 0.0.0.0
+              -Djboss.http.port=8080
+              -Dkeycloak.migration.action=import
+              -Dkeycloak.migration.provider=dir
+              -Dkeycloak.migration.dir=/opt/jboss/import
+              -Dkeycloak.migration.strategy=IGNORE_EXISTING"
+    ports:
+      - "8060:8080"

@@ -83,7 +83,7 @@ module.exports = function (/* ctx */) {
           ws: true
         },
       },
-      open: true // opens browser window automatically
+      open: false
     },
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework

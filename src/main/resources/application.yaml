@@ -6,8 +6,18 @@ spring:
     server:
       transport: websocket
       mapping-path: /server/rsocket
+  cloud:
+    gateway:
+      routes:
+      - id: "server"
+        uri: http://127.0.0.1:8070
+        predicates:
+          - Path=/server/**
+      - id: "frontend"
+        uri: http://127.0.0.1:8080
+        predicates:
+          - Path=/**
 
 logging:
   level:
     com.nexiles: DEBUG
-
