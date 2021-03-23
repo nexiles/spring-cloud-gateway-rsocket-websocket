@@ -6,7 +6,9 @@ import com.nexiles.example.gatewayrsocketwebsocket.config.SecurityConstants;
 import com.nexiles.example.gatewayrsocketwebsocket.events.NewOrderEvent;
 import com.nexiles.example.gatewayrsocketwebsocket.pojo.CustomMetadata;
 import com.nexiles.example.gatewayrsocketwebsocket.pojo.Order;
+import com.nexiles.example.gatewayrsocketwebsocket.pojo.RSocketUser;
 import com.nexiles.example.gatewayrsocketwebsocket.states.OrderKind;
+import com.nexiles.example.gatewayrsocketwebsocket.utility.RSocketAuthUser;
 import com.nexiles.example.gatewayrsocketwebsocket.utility.SecurityUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -18,8 +20,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.rsocket.annotation.ConnectMapping;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,7 +30,8 @@ import reactor.core.publisher.Sinks;
 
 import java.security.Principal;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -84,37 +85,40 @@ public class OrderController {
     private static final String CONTENT_TYPE_KEY = "contentType";
 
     @MessageMapping(value = "orders.{kind}")
-    public Flux<Order> subscribeToOrders(@AuthenticationPrincipal UserDetails user,
+    public Flux<Order> subscribeToOrders(@RSocketAuthUser RSocketUser rSocketUser,
                                          @Headers Map<String, Object> metadata,
                                          @Payload(required = false) Map<String, String> payload,
                                          @DestinationVariable("kind") String identifier) {
 
-        logUserHeadersAndPayload(user, metadata, payload, String.format("New RSocket connection to route: '%s' - kind: '%s'", "orders", identifier));
+        logUserHeadersAndPayload(rSocketUser, metadata, payload, String.format("New RSocket connection to route: '%s' - kind: '%s'", "orders", identifier));
         final OrderKind requestedOrderKind = OrderKind.byIdentifier(identifier);
 
-        final Optional<? extends GrantedAuthority> firstAuthority = user.getAuthorities().stream().findFirst(); // There should/must be only one
-        if (firstAuthority.isEmpty()) // but handle...
+        final Set<GrantedAuthority> grantedAuthorities = rSocketUser.getAuthorities(); // There should/must be only one
+        if (grantedAuthorities.isEmpty()) // but handle...
             throw new AccessDeniedException("User has no authorities!");
 
-        final GrantedAuthority authority = firstAuthority.get();
+        final Set<String> authorities = grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
 
         return Flux.from(orderSink.asFlux().filter(order ->
-                authority.getAuthority().equals(SecurityConstants.ADMIN_ROLE) ||
-                        (requestedOrderKind.equals(OrderKind.LOTR) && authority.getAuthority().equals(SecurityConstants.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
-                        (requestedOrderKind.equals(OrderKind.GOT) && authority.getAuthority().equals(SecurityConstants.GOT_ROLE) && order.getKind().equals(requestedOrderKind))
+                // 'admin' gets requested no matter what
+                (authorities.contains(SecurityConstants.ADMIN_ROLE) && order.getKind().equals(requestedOrderKind)) ||
+                        // 'frodo' gets only LOTR orders
+                        (requestedOrderKind.equals(OrderKind.LOTR) && authorities.contains(SecurityConstants.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
+                        // 'john' gets only GOT order
+                        (requestedOrderKind.equals(OrderKind.GOT) && authorities.contains(SecurityConstants.GOT_ROLE) && order.getKind().equals(requestedOrderKind))
         ));
     }
 
     @SuppressWarnings("unused")
     @ConnectMapping
-    public void rSocketConnect(@AuthenticationPrincipal Mono<UserDetails> user,
+    public void rSocketConnect(@RSocketAuthUser RSocketUser rsocketUser,
                                @Headers Map<String, Object> metadata,
                                @Payload(required = false) Map<String, String> payload) {
 
-        user.subscribe(userDetails -> logUserHeadersAndPayload(userDetails, metadata, payload, "New RSocket connection"));
+        logUserHeadersAndPayload(rsocketUser, metadata, payload, "New RSocket connection");
     }
 
-    private void logUserHeadersAndPayload(UserDetails user, Map<String, Object> metadata,
+    private void logUserHeadersAndPayload(RSocketUser user, Map<String, Object> metadata,
                                           Map<String, String> payload, String reason) {
 
         final Object destination = metadata.getOrDefault(DESTINATION_KEY, null);
@@ -123,13 +127,14 @@ public class OrderController {
 
         log.debug("");
         log.debug(" - " + reason);
-        log.debug("User: '{}' Role/s: '{}'", user.getUsername(), user.getAuthorities());
-        log.debug("Destination: '{}'", destination != null && !destination.toString().equals("") ? destination.toString() : "unknown");
-        log.debug("FrameType: '{}'", frameType != null ? frameType.toString() : "unknown");
-        log.debug("ContentType: '{}'", contentType != null ? contentType.toString() : "unknown");
+        log.debug("User: '{}' Role/s: '{}'", user.getUserName(), user.getAuthorities());
+        log.debug("IdentityProvider: '{}'", user.getProvider());
+        log.debug("Destination: '{}'", destination != null && !destination.toString().equals("") ? destination : "unknown");
+        log.debug("FrameType: '{}'", frameType != null ? frameType : "unknown");
+        log.debug("ContentType: '{}'", contentType != null ? contentType : "unknown");
 
         if (payload != null) {
-            log.debug("Payload: '{}'", payload.toString());
+            log.debug("Payload: '{}'", payload);
         }
 
         final Object customMeta = metadata.getOrDefault(RSocketConfig.CUSTOM_META_KEY, null);

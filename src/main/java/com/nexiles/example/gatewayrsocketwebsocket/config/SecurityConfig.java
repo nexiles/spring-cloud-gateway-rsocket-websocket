@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.rsocket.EnableRSocketSecurity;
+import org.springframework.security.config.annotation.rsocket.RSocketSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.AuthenticationException;
@@ -14,6 +17,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.rsocket.core.PayloadSocketAcceptorInterceptor;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.web.server.ServerWebExchange;
@@ -23,6 +27,7 @@ import reactor.core.publisher.Mono;
 @Profile("!keycloak")
 @Configuration
 @EnableWebFluxSecurity
+@EnableRSocketSecurity
 public class SecurityConfig {
 
     @Bean
@@ -34,6 +39,15 @@ public class SecurityConfig {
                 .httpBasic().authenticationEntryPoint(new NoPopupBasicAuthenticationEntryPoint()).and()
                 .csrf().disable()
                 .build();
+    }
+
+    @Bean
+    public PayloadSocketAcceptorInterceptor authorization(RSocketSecurity security) {
+        security.authorizePayload(authorize -> authorize.anyExchange().authenticated())
+                .addPayloadInterceptor(RSocketConfig.payLoadInterceptor())
+                .simpleAuthentication(Customizer.withDefaults())
+        ;
+        return security.build();
     }
 
     @Bean

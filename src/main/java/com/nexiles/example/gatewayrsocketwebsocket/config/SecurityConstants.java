@@ -12,4 +12,8 @@ public interface SecurityConstants {
     String LOTR_ROLE = ROLE_PREFIX + LOTR;
     String GOT_ROLE = ROLE_PREFIX + GOT;
 
+    String JWT_NAME_CLAIM = "preferred_username";
+    String JWT_REALM_ACCESS_CLAIM = "realm_access";
+    String JWT_ROLES_CLAIM = "roles";
+
 }

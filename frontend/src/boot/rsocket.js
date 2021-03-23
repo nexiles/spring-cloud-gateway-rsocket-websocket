@@ -2,6 +2,7 @@ import {
   BufferEncoders,
   encodeCompositeMetadata,
   encodeSimpleAuthMetadata,
+  encodeBearerAuthMetadata,
   encodeRoute,
   APPLICATION_JSON,
   MESSAGE_RSOCKET_COMPOSITE_METADATA,
@@ -10,6 +11,7 @@ import {
   RSocketClient,
   JsonSerializer
 } from 'rsocket-core';
+import {authentication} from "src/js/Auth";
 import RSocketWebSocketClient from 'rsocket-websocket-client';
 import {Buffer} from "rsocket-core/build/LiteBuffer";
 
@@ -20,7 +22,7 @@ const lifetime = 180000;
 const dataMimeType = 'application/json';
 const metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string;
 
-function setupClient(user) {
+function setupClient(auth) {
   return new RSocketClient({
     setup: {
       dataMimeType,
@@ -29,7 +31,7 @@ function setupClient(user) {
       metadataMimeType,
       payload: {
         data: undefined,
-        metadata: encodeMetaData(user),
+        metadata: encodeMetaData(auth),
       },
     },
     transport: new RSocketWebSocketClient({
@@ -45,13 +47,20 @@ function encodeData(data) {
   return Buffer.from(JsonSerializer.serialize(data))
 }
 
-function encodeMetaData(user, route, customMetadata) {
+function encodeMetaData(auth, route, customMetadata) {
   const metadata = [];
 
-  console.debug("User: " + user + " Route: " + route + " Meta: " + customMetadata)
+  console.debug("Auth: " + JSON.stringify(auth) + " Route: " + route + " Meta: " + customMetadata)
 
-  if (user)
-    metadata.push([MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]);
+  if (auth) {
+    if (auth.authType === authentication.BEARER) {
+      metadata.push([MESSAGE_RSOCKET_AUTHENTICATION, encodeBearerAuthMetadata(auth.value)]);
+    }
+    else if (auth.authType === authentication.BASIC) {
+      const user = auth.value;
+      metadata.push([MESSAGE_RSOCKET_AUTHENTICATION, encodeSimpleAuthMetadata(user.username, user.password)]);
+    }
+  }
 
   if (route)
     metadata.push([MESSAGE_RSOCKET_ROUTING, encodeRoute(route)]);

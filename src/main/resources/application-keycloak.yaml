@@ -10,4 +10,7 @@ spring:
           keycloak:
             client-id: gateway
             client-secret: 059fa1a6-b94f-42a1-81c8-210acfe6f299
-            scope: openid
+            scope: openid, roles
+      resourceserver:
+        jwt:
+          issuer-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}

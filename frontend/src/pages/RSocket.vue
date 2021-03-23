@@ -127,6 +127,7 @@
 <script>
 import {orderKind} from "../js/Order"
 import {User} from "../js/User"
+import {Auth, authentication} from "src/js/Auth";
 
 export default {
   name: 'RSocket',
@@ -237,20 +238,32 @@ export default {
       return undefined;
     },
     async isAuthenticated() {
-      const authenticated = await this.axios.get("/security/authenticated", {auth: this.getUser()});
+      const user = this.getUser();
+      const authenticated = await this.axios.get("/security/authenticated", {auth: user});
       if (authenticated?.status === 200) {
         this.authenticated = true;
         this.$q.notify({
-          message: "Successfully authenticated",
+          message: `Successfully authenticated as '${user.username}'`,
           type: "positive",
           icon: 'announcement'
         })
       } else {
         this.$q.notify({
+          message: `Cannot authenticate as '${user.username}'`,
           type: "negative",
           icon: 'announcement'
         })
       }
+    },
+    async getJWT() {
+      const jwt = await this.axios.get("/security/jwt");
+      return jwt.data;
+    },
+    async getAuth() {
+      if (this.isIdentityProviderKeyCloak) {
+        return new Auth(authentication.BEARER, await this.getJWT());
+      }
+      return new Auth(authentication.BASIC, this.getUser());
     },
     createNewOrder() {
       this.axios.get("/server/orders/new", {auth: this.getUser()})
@@ -261,9 +274,9 @@ export default {
     createNewGOTOrder() {
       this.axios.get("/server/orders/new", {auth: this.getUser(), params: {kind: orderKind.GOT}})
     },
-    connectRSocket() {
+    async connectRSocket() {
 
-      this.$setuprsocketclient(this.getUser())
+      this.$setuprsocketclient(await this.getAuth())
         .connect().then(
         socket => {
 
@@ -306,29 +319,29 @@ export default {
         },
       );
     },
-    subscribeAll() {
+    async subscribeAll() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request all"}),
-          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.ALL), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.ALL));
     },
-    subscribeLOTR() {
+    async subscribeLOTR() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request lotr"}),
-          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.LOTR), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.LOTR));
     },
-    subscribeGOT() {
+    async subscribeGOT() {
       this.rsocket
         .requestStream({
           data: this.$encodedata({jsclient: "request got"}),
-          metadata: this.$encodemetadata(this.getUser(), this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
+          metadata: this.$encodemetadata(await this.getAuth(), this.routeWithIdentifier(orderKind.GOT), {data: "custom metadata value from js"}),
         })
         //.subscribe(subscription => this.subscriptionHandler(subscription))
         .subscribe(this.subscriptionHandler(orderKind.GOT));
