@@ -33,6 +33,16 @@ For now this example is just using the *REQUEST_STREAM* frame, but could be easi
 
 The decision about **who retrieves which data** is made based on the users *authorities*.
 
+## Demo
+
+#### SpringSecurity
+
+![springsecurity-example](assets/security-example.gif)
+
+#### KeyCloak
+
+![keycloak-example](assets/keycloak-example.gif)
+
 ## Security
 
 This example can be used with two different *Identity Providers*:
