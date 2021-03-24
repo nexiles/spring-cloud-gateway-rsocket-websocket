@@ -99,14 +99,24 @@ public class OrderController {
 
         final Set<String> authorities = grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
 
-        return Flux.from(orderSink.asFlux().filter(order ->
-                // 'admin' gets requested no matter what
-                (authorities.contains(SecurityConstants.ADMIN_ROLE) && order.getKind().equals(requestedOrderKind)) ||
-                        // 'frodo' gets only LOTR orders
-                        (requestedOrderKind.equals(OrderKind.LOTR) && authorities.contains(SecurityConstants.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
-                        // 'john' gets only GOT order
-                        (requestedOrderKind.equals(OrderKind.GOT) && authorities.contains(SecurityConstants.GOT_ROLE) && order.getKind().equals(requestedOrderKind))
-        ));
+        return Flux.from(orderSink.asFlux().filter(order -> filterRequestedOrdersForAuthorities(order, requestedOrderKind, authorities)));
+    }
+
+    private boolean filterRequestedOrdersForAuthorities(Order order, OrderKind requestedOrderKind, Set<String> authorities) {
+
+        // 'admin' gets requested no matter what
+        if (authorities.contains(SecurityConstants.ADMIN_ROLE)) {
+            if (requestedOrderKind.equals(OrderKind.ALL))
+                return true;
+            return order.getKind().equals(requestedOrderKind);
+        }
+        // @formatter:off
+        return
+                // 'frodo' gets only LOTR orders
+                (requestedOrderKind.equals(OrderKind.LOTR) && authorities.contains(SecurityConstants.LOTR_ROLE) && order.getKind().equals(requestedOrderKind)) ||
+                // 'john' gets only GOT order
+                (requestedOrderKind.equals(OrderKind.GOT) && authorities.contains(SecurityConstants.GOT_ROLE) && order.getKind().equals(requestedOrderKind));
+        // @formatter:on
     }
 
     @SuppressWarnings("unused")
