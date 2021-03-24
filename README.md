@@ -116,6 +116,8 @@ Now head over to the *frontend* served under **http://localhost:8070/** (routed 
 
 ### Test with other tools
 
+All values in *doubled curly brackets ({{})* must be replaced with the actual value, including the brackets!
+
 #### RSocket
 
 For RSocket development I used [RSC](https://github.com/making/rsc) installed using:
@@ -130,20 +132,33 @@ brew install making/tap/rsc
 
 ```shell
 # Basic
-$ rsc --stream --route=orders.all --sm simple:user:password --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
-$ rsc --stream --route=orders.lotr --sm simple:user:password --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
-$ rsc --stream --route=orders.got --sm simple:user:password --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.all --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.lotr --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.got --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
 
 # With data (payload)
-$ rsc --stream --route=orders.all --sm simple:user:password --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --data='{"rscclient":"request"}' ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.all --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --data='{"rscclient":"request"}' ws://localhost:8070/server/rsocket
 
 # With metadata
-$ rsc --stream --route=orders.all --sm simple:user:password --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --metadata='{"data":"custom metadata value from rsc"}' ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.all --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --metadata='{"data":"custom metadata value from rsc"}' ws://localhost:8070/server/rsocket
 ```
 
 ##### KeyCloak
 
-Needs to be added...
+First we need to get an *access_token* for *bearer auth*, [see this](#get-access-token)
+
+```shell
+# Basic
+$ rsc --stream --route=orders.all --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.lotr --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+$ rsc --stream --route=orders.got --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug ws://localhost:8070/server/rsocket
+
+# With data (payload)
+$ rsc --stream --route=orders.all --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --data='{"rscclient":"request"}' ws://localhost:8070/server/rsocket
+
+# With metadata
+$ rsc --stream --route=orders.all --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --metadata='{"data":"custom metadata value from rsc"}' ws://localhost:8070/server/rsocket
+```
 
 #### HTTP
 
@@ -151,23 +166,51 @@ To retrieve the stream using *HTTP* I used [HTTPIE](https://httpie.io/) using:
 
 ##### SpringSecurity
 
+Retrieve orders:
+
 ````shell
-http :8070/server/orders --stream --auth "user:password"
+http --stream :8070/server/orders --auth "{{user}}:{{password}}"
 ````
 
-Use *HTTPie* to create orders:
+Create orders:
 
 ```shell
 # Random
-http :8070/server/orders/new --auth "user:password"
+http :8070/server/orders/new --auth "{{user}}:{{password}}"
 # Specific
-http :8070/server/orders/new kind==lotr --auth "user:password"
-http :8070/server/orders/new kind==got --auth "user:password"
+http :8070/server/orders/new kind==lotr --auth "{{user}}:{{password}}"
+http :8070/server/orders/new kind==got --auth "{{user}}:{{password}}"
 ```
+
+http --stream :8070/server/orders Authorization:"Bearer {{access_token}}"
 
 ##### KeyCloak
 
-Needs to be added...
+First we need to get an *access_token* for *bearer auth*, [see this](#get-access-token)
+
+````shell
+http --stream :8070/server/orders Authorization:"Bearer {{access_token}}"
+````
+
+Create orders:
+
+```shell
+# Random
+http :8070/server/orders/new Authorization:"Bearer {{access_token}}"
+# Specific
+http :8070/server/orders/new kind==lotr Authorization:"Bearer {{access_token}}"
+http :8070/server/orders/new kind==got Authorization:"Bearer {{access_token}}"
+```
+
+### Get KeyCloak AccessToken <span id="get-access-token"><span>
+
+To directly extract the token from the JSON response [JQ](https://github.com/stedolan/jq) is used.
+
+```shell
+http -f :8060/auth/realms/RSOCKET/protocol/openid-connect/token client_id=gateway username={{user}} password={{password}} grant_type=password client_secret=059fa1a6-b94f-42a1-81c8-210acfe6f299 | jq .access_token
+```
+
+Now this token can be used for *bearer auth*.
 
 ## Next up
 
