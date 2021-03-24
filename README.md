@@ -114,11 +114,11 @@ Now head over to the *frontend* served under **http://localhost:8070/** (routed 
 
 **KeyCloak:** 8060 (optional)
 
-### Test with other tools
+## Test with other tools
 
 All values in *doubled curly brackets ({{})* must be replaced with the actual value, including the brackets!
 
-#### RSocket
+### RSocket
 
 For RSocket development I used [RSC](https://github.com/making/rsc) installed using:
 
@@ -128,7 +128,7 @@ brew install making/tap/rsc
 
 **Note:** When using this tool whole frames sent are visible and also check out the server logs.
 
-##### SpringSecurity
+#### SpringSecurity
 
 ```shell
 # Basic
@@ -143,7 +143,7 @@ $ rsc --stream --route=orders.all --sm simple:{{user}}:{{password}} --smmt MESSA
 $ rsc --stream --route=orders.all --sm simple:{{user}}:{{password}} --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --metadata='{"data":"custom metadata value from rsc"}' ws://localhost:8070/server/rsocket
 ```
 
-##### KeyCloak
+#### KeyCloak
 
 First we need to get an *access_token* for *bearer auth*, [see this](#get-access-token)
 
@@ -160,11 +160,11 @@ $ rsc --stream --route=orders.all --sm "bearer:{{access_token}}" --smmt MESSAGE_
 $ rsc --stream --route=orders.all --sm "bearer:{{access_token}}" --smmt MESSAGE_RSOCKET_AUTHENTICATION --debug --metadata='{"data":"custom metadata value from rsc"}' ws://localhost:8070/server/rsocket
 ```
 
-#### HTTP
+### HTTP
 
 To retrieve the stream using *HTTP* I used [HTTPIE](https://httpie.io/) using:
 
-##### SpringSecurity
+#### SpringSecurity
 
 Retrieve orders:
 
@@ -184,7 +184,7 @@ http :8070/server/orders/new kind==got --auth "{{user}}:{{password}}"
 
 http --stream :8070/server/orders Authorization:"Bearer {{access_token}}"
 
-##### KeyCloak
+#### KeyCloak
 
 First we need to get an *access_token* for *bearer auth*, [see this](#get-access-token)
 
