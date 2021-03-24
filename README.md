@@ -73,7 +73,7 @@ Either use the checked in IntelliJ run-configuration in *.run* or launch it manu
 ```shell
 $ mvn clean package
 $ cd target/
-$ java -jar gateway-rsocket-websocket-0.0.1-SNAPSHOT.jar
+$ java -jar gateway-rsocket-websocket.jar
 ```
 
 #### KeyCloak
@@ -83,7 +83,7 @@ Run the KeyCloak using `docker-compose up` and start the server afterwards:
 ```shell
 $ mvn clean package
 $ cd target/
-$ java -jar -Dspring.profiles.active=keycloak gateway-rsocket-websocket-0.0.1-SNAPSHOT.jar
+$ java -jar -Dspring.profiles.active=keycloak gateway-rsocket-websocket.jar
 ```
 
 ### Client (Node v14.16.0 & NPM v6.14.11)
