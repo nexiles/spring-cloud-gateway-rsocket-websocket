@@ -13,7 +13,7 @@
   "dependencies": {
     "@quasar/extras": "^1.0.0",
     "axios": "^0.21.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.22.2",
     "quasar": "^1.0.0",
     "rsocket-core": "0.0.25",
     "rsocket-websocket-client": "0.0.25",
