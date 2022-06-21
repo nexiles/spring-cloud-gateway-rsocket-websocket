@@ -1,5 +1,7 @@
 # SpringCloud Gateway RSocket Example
 
+**NOTE: This Project has been archived and will no longer get updates.**
+
 ## What is RSocket ? 
 
 Check out the official docs: [RSocket Docs](https://rsocket.io/docs/)
